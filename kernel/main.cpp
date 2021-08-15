@@ -233,6 +233,39 @@ extern "C" void KernelMainNewStack(
     .InitContext(TaskWallclock, 0)
     .Wakeup();
 
+  // ここから追加: nic-pci
+
+  bool nic_found = false;
+  pci::Device* nic_dev = nullptr;
+  for (int i = 0; i < pci::num_device; ++i) {
+    printk("class code: %02hhx%02hhx%02hhx\n", pci::devices[i].class_code.base,
+      pci::devices[i].class_code.sub, pci::devices[i].class_code.interface);
+    if (pci::devices[i].class_code.Match(0x02u, 0x00u, 0x00u)) {
+      printk("nic found\n");
+      nic_found = true;
+      nic_dev = &pci::devices[i];
+      if (0x8086 == pci::ReadVendorId(*nic_dev)) {
+        break;
+      }
+    }
+  }
+
+  if (!nic_found) {
+    printk("nic not found\n");
+  }
+
+  // TODO: 割り込みのなんか (MSI)
+
+  // BAR を読む
+  const WithError<uint64_t> nic_bar = pci::ReadBar(*nic_dev, 0);
+
+  if (nic_bar.error) {
+    printk("Error while reading BAR\n");
+  }
+  printk("NIC BAR: %016lx\n", nic_bar.value);
+
+  // ここまで追加: pci
+
   char str[128];
 
   while (true) {
