@@ -83,4 +83,24 @@ namespace net::e1000 {
     nic = new Nic{nic_mmio_base};
     nic->Initialize();
   }
+
+  uint8_t Nic::Send(void *buf, uint16_t length) {
+    // ディスクリプタリングを書き換える
+    t_descriptor *desc = &this->desc_ring_addr_[this->tale_];
+    desc->buffer_address = (uintptr_t)buf;
+    desc->length = length;
+    desc->cmd = desc->cmd | T_DESC_CMD_EOP;
+    desc->sta = 0;
+
+    // NIC の TALE をインクリメントする
+    this->tale_++;
+    SetNicReg(TDT_OFFSET, this->tale_);
+
+    // 送信処理の完了を待つ
+    uint8_t send_status = 0;
+    while(!send_status) {
+      send_status = desc->sta & 0x0fu;
+    }
+    return send_status;
+  }
 }

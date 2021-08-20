@@ -56,6 +56,7 @@ namespace net::e1000 {
    public:
     Nic(uintptr_t mmio_base);
     void Initialize();
+    uint8_t Send(void *buf, uint16_t length);
    
    private:
     const uintptr_t mmio_base_;
@@ -66,4 +67,6 @@ namespace net::e1000 {
   };
 
   void Initialize();
+
+  extern Nic *nic;
 }
