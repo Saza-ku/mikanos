@@ -17,40 +17,66 @@ namespace net::e1000 {
     *(uint32_t *)reg_addr = value;
   }
 
-  void Nic::Initialize() {
-    // ディスクリプタリングのメモリを確保
-    static t_descriptor desc_ring_buf[sizeof(t_descriptor) * T_DESC_NUM]
+  void Nic::Initialize(bool accept_all) {
+    // 送信ディスクリプタリングのメモリを確保
+    static t_descriptor t_desc_ring_buf[sizeof(t_descriptor) * T_DESC_NUM]
       __attribute__((aligned(16)));
-    desc_ring_addr_ = (t_descriptor *)desc_ring_buf;
+    t_desc_ring_addr_ = (t_descriptor *)t_desc_ring_buf;
 
-    // 各ディスクリプタのフィールドを初期化する
+    // 受信ディスクリプタのメモリを確保
+    static r_descriptor r_desc_ring_buf[sizeof(r_descriptor) * R_DESC_NUM]
+      __attribute__((aligned(16)));
+    r_desc_ring_addr_ = (r_descriptor *)r_desc_ring_buf;
+
+    // 送信ディスクリプタのフィールドを初期化する
     for (int i = 0; i < T_DESC_NUM; i++) {
-      desc_ring_addr_[i].buffer_address = 0;
-      desc_ring_addr_[i].length = 0;
-      desc_ring_addr_[i].cso = 0;
-      desc_ring_addr_[i].cmd = T_DESC_CMD_RS;
-      desc_ring_addr_[i].sta = 0;
-      desc_ring_addr_[i].rsv = 0;
-      desc_ring_addr_[i].css = 0;
-      desc_ring_addr_[i].special = 0;
+      t_desc_ring_addr_[i].buffer_address = 0;
+      t_desc_ring_addr_[i].length = 0;
+      t_desc_ring_addr_[i].checksum_offset = 0;
+      t_desc_ring_addr_[i].command = T_DESC_CMD_RS;
+      t_desc_ring_addr_[i].status = 0;
+      t_desc_ring_addr_[i].reserved = 0;
+      t_desc_ring_addr_[i].checksum_start_field = 0;
+      t_desc_ring_addr_[i].special = 0;
     }
 
-    tale_ = 0;
+    // 受信ディスクリプタのフィールドを初期化する
+    static uint8_t packet_buffer[R_DESC_NUM][PACKET_SIZE];
+    for (int i = 0; i < R_DESC_NUM; i++) {
+      r_desc_ring_addr_[i].buffer_address =
+        (uint64_t)&packet_buffer[R_DESC_NUM];
+      r_desc_ring_addr_[i].status = 0;
+      r_desc_ring_addr_[i].errors = 0;
+    }
+
+    t_tale_ = 0;
+    r_tale_ = R_DESC_NUM - 1;
 
     // NIC の初期化処理
     SetNicReg(CTRL_OFFSET,
       CTRL_FD | CTRL_ASDE | CTRL_SLU | CTRL_SPEED | CTRL_FRCPED | CTRL_FRCDPLX);
 
     // 送信処理の設定
-    SetNicReg(TCTL_OFFSET,
-      TCTL_EN | TCTL_PSP | TCTL_CT | TCTL_COLD);
-    SetNicReg(TIPG_OFFSET,
-      TIPG_IPGT | TIPG_IPGR1 | TIPG_IPGR2);
-    SetNicReg(TDBAL_OFFSET, (uintptr_t)desc_ring_addr_ & static_cast<uint64_t>(0xffffffff));
-    SetNicReg(TDBAH_OFFSET, (uintptr_t)desc_ring_addr_ >> 32);
+    uint32_t tctl_value = TCTL_EN | TCTL_PSP | TCTL_CT | TCTL_COLD;
+    SetNicReg(TCTL_OFFSET, tctl_value);
+    SetNicReg(TIPG_OFFSET, TIPG_IPGT | TIPG_IPGR1 | TIPG_IPGR2);
+    SetNicReg(TDBAL_OFFSET, (uintptr_t)t_desc_ring_addr_ & static_cast<uint64_t>(0xffffffff));
+    SetNicReg(TDBAH_OFFSET, (uintptr_t)t_desc_ring_addr_ >> 32);
     SetNicReg(TDLEN_OFFSET, sizeof(t_descriptor) * T_DESC_NUM);
-    SetNicReg(TDH_OFFSET, tale_);
-    SetNicReg(TDT_OFFSET, tale_);
+    SetNicReg(TDH_OFFSET, t_tale_);
+    SetNicReg(TDT_OFFSET, t_tale_);
+
+    // 受信処理の設定
+    uint32_t rctl_value = RCTL_EN | RCTL_EN;
+    if (accept_all) {
+      rctl_value = rctl_value | RCTL_SBP | RCTL_UPE | RCTL_MPE;
+    }
+    SetNicReg(RCTL_OFFSET, rctl_value);
+    SetNicReg(RDBAL_OFFSET, (uintptr_t)t_desc_ring_addr_ & static_cast<uint64_t>(0xffffffff));
+    SetNicReg(RDBAH_OFFSET, (uintptr_t)t_desc_ring_addr_ >> 32);
+    SetNicReg(RDLEN_OFFSET, sizeof(t_descriptor) * T_DESC_NUM);
+    SetNicReg(RDH_OFFSET, 0);
+    SetNicReg(RDT_OFFSET, r_tale_);
   }
 
   void Initialize() {
@@ -81,25 +107,25 @@ namespace net::e1000 {
     Log(kDebug, "NIC mmio_base = %08lx\n", nic_mmio_base);
 
     nic = new Nic{nic_mmio_base};
-    nic->Initialize();
+    nic->Initialize(true);
   }
 
   uint8_t Nic::Send(void *buf, uint16_t length) {
     // ディスクリプタリングを書き換える
-    t_descriptor *desc = &this->desc_ring_addr_[this->tale_];
+    t_descriptor *desc = &this->t_desc_ring_addr_[this->t_tale_];
     desc->buffer_address = (uintptr_t)buf;
     desc->length = length;
-    desc->cmd = desc->cmd | T_DESC_CMD_EOP;
-    desc->sta = 0;
+    desc->command = desc->command | T_DESC_CMD_EOP;
+    desc->status = 0;
 
     // NIC の TALE をインクリメントする
-    this->tale_++;
-    SetNicReg(TDT_OFFSET, this->tale_);
+    this->t_tale_++;
+    SetNicReg(TDT_OFFSET, this->t_tale_);
 
     // 送信処理の完了を待つ
     uint8_t send_status = 0;
     while(!send_status) {
-      send_status = desc->sta & 0x0fu;
+      send_status = desc->status & 0x0fu;
     }
     return send_status;
   }
