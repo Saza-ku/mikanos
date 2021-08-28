@@ -38,6 +38,7 @@
 #include "fat.hpp"
 #include "syscall.hpp"
 #include "uefi.hpp"
+#include "net/nic/e1000.hpp"
 
 __attribute__((format(printf, 1, 2))) int printk(const char* format, ...) {
   va_list ap;
@@ -234,6 +235,11 @@ extern "C" void KernelMainNewStack(
     .Wakeup();
 
   char str[128];
+
+  net::e1000::Initialize();
+  char message_buffer[] = "Hello, World!";
+  uint8_t sta = net::e1000::nic->Send(message_buffer, sizeof(message_buffer));
+  printk("sta: %d\n", sta);
 
   while (true) {
     __asm__("cli");
