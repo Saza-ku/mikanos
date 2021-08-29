@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/home/vscode/edk2/MdePkg/Include",
+                "/home/vscode/edk2/MdePkg/Include/X64",
+                "/home/vscode/osbook/devenv/x86_64-elf/include/c++/v1",
+                "/home/vscode/osbook/devenv/x86_64-elf/include",
+                "/home/vscode/osbook/devenv/x86_64-elf/include/freetype2",
+
+            ],
+            "defines": [
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
