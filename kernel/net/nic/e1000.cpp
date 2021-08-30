@@ -40,13 +40,14 @@ namespace net::e1000 {
       t_desc_ring_addr_[i].special = 0;
     }
 
-    // 受信ディスクリプタのフィールドを初期化する
     static uint8_t packet_buffer[R_DESC_NUM][PACKET_SIZE];
+    // 受信ディスクリプタのフィールドを初期化する
     for (int i = 0; i < R_DESC_NUM; i++) {
       r_desc_ring_addr_[i].buffer_address =
-        (uint64_t)&packet_buffer[R_DESC_NUM];
+        (uint64_t)&packet_buffer[i];
       r_desc_ring_addr_[i].status = 0;
       r_desc_ring_addr_[i].errors = 0;
+      Log(kError, "buffer %d: %d\n", i, r_desc_ring_addr_[i].buffer_address);
     }
 
     t_tale_ = 0;
@@ -67,14 +68,14 @@ namespace net::e1000 {
     SetNicReg(TDT_OFFSET, t_tale_);
 
     // 受信処理の設定
-    uint32_t rctl_value = RCTL_EN | RCTL_EN;
+    uint32_t rctl_value = RCTL_BAM | RCTL_EN;
     if (accept_all) {
       rctl_value = rctl_value | RCTL_SBP | RCTL_UPE | RCTL_MPE;
     }
     SetNicReg(RCTL_OFFSET, rctl_value);
-    SetNicReg(RDBAL_OFFSET, (uintptr_t)t_desc_ring_addr_ & static_cast<uint64_t>(0xffffffff));
-    SetNicReg(RDBAH_OFFSET, (uintptr_t)t_desc_ring_addr_ >> 32);
-    SetNicReg(RDLEN_OFFSET, sizeof(t_descriptor) * T_DESC_NUM);
+    SetNicReg(RDBAL_OFFSET, (uintptr_t)r_desc_ring_addr_ & static_cast<uint64_t>(0xffffffff));
+    SetNicReg(RDBAH_OFFSET, (uintptr_t)r_desc_ring_addr_ >> 32);
+    SetNicReg(RDLEN_OFFSET, sizeof(t_descriptor) * R_DESC_NUM);
     SetNicReg(RDH_OFFSET, 0);
     SetNicReg(RDT_OFFSET, r_tale_);
   }
@@ -132,17 +133,18 @@ namespace net::e1000 {
 
   uint16_t Nic::Receive (void *buf) {
     uint32_t next_tale = (r_tale_ + 1) % R_DESC_NUM;
-    r_descriptor desc = r_desc_ring_addr_[next_tale];
+    r_descriptor *desc = &r_desc_ring_addr_[next_tale];
     uint16_t len = 0;
 
     // TODO: 受信の判定、RDESC.STATUS.DD とかいうのがあるのでそれを使う
-    if (desc.status) {
-      len = desc.length;
-      memcpy(buf, (void *)desc.buffer_address, len);
+    if (desc->status != 0) {
+      len = desc->length + 1;
+      memcpy(buf, (void *)desc->buffer_address, len);
 
       r_tale_++;
       SetNicReg(RDT_OFFSET, r_tale_);
     }
+
     return len;
   }
 }

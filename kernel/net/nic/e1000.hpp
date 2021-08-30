@@ -5,7 +5,7 @@
 #define ALIGN_MARGIN   15
 #define T_DESC_NUM     8
 #define R_DESC_NUM     8
-#define PACKET_SIZE    2024
+#define PACKET_SIZE    2048
 
 #define CTRL_OFFSET    0x00000u
 #define TCTL_OFFSET    0x00400u
@@ -85,14 +85,14 @@ namespace net::e1000 {
     void Initialize(bool accept_all);
     uint8_t Send(void *buf, uint16_t length);
     uint16_t Receive(void *buf);
-   
+    uint32_t GetNicReg(uint16_t reg_offset);
+    
    private:
     const uintptr_t mmio_base_;
     uint32_t t_tale_;
     uint32_t r_tale_;
     t_descriptor *t_desc_ring_addr_;
     r_descriptor *r_desc_ring_addr_;
-    uint32_t GetNicReg(uint16_t reg_offset);
     void SetNicReg(uint16_t reg_offset, uint32_t value);
   };
 
