@@ -84,6 +84,7 @@ namespace net::e1000 {
     Nic(uintptr_t mmio_base);
     void Initialize(bool accept_all);
     uint8_t Send(void *buf, uint16_t length);
+    uint16_t Receive(void *buf);
    
    private:
     const uintptr_t mmio_base_;

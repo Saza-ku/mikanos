@@ -129,4 +129,20 @@ namespace net::e1000 {
     }
     return send_status;
   }
+
+  uint16_t Nic::Receive (void *buf) {
+    uint32_t next_tale = (r_tale_ + 1) % R_DESC_NUM;
+    r_descriptor desc = r_desc_ring_addr_[next_tale];
+    uint16_t len = 0;
+
+    // TODO: 受信の判定、RDESC.STATUS.DD とかいうのがあるのでそれを使う
+    if (desc.status) {
+      len = desc.length;
+      memcpy(buf, (void *)desc.buffer_address, len);
+
+      r_tale_++;
+      SetNicReg(RDT_OFFSET, r_tale_);
+    }
+    return len;
+  }
 }
