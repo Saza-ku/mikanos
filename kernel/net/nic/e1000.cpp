@@ -1,6 +1,8 @@
+#include <string.h>
 #include "net/nic/e1000.hpp"
 #include "pci.hpp"
 #include "logger.hpp"
+#include "interrupt.hpp"
 
 namespace net::e1000 {
   Nic *nic;
@@ -72,7 +74,12 @@ namespace net::e1000 {
     if (accept_all) {
       rctl_value = rctl_value | RCTL_SBP | RCTL_UPE | RCTL_MPE;
     }
+    uint32_t ims_value = IMS_LSC | IMS_RXSEQ | IMS_RXDMT0 | IMS_RXO
+                       | IMS_RXT0;
     SetNicReg(RCTL_OFFSET, rctl_value);
+    SetNicReg(IMS_OFFSET, ims_value);
+    SetNicReg(RDTR_OFFSET, RDTR_DELAY);
+    SetNicReg(RADV_OFFSET, RADV_DELAY);
     SetNicReg(RDBAL_OFFSET, (uintptr_t)r_desc_ring_addr_ & static_cast<uint64_t>(0xffffffff));
     SetNicReg(RDBAH_OFFSET, (uintptr_t)r_desc_ring_addr_ >> 32);
     SetNicReg(RDLEN_OFFSET, sizeof(t_descriptor) * R_DESC_NUM);
@@ -99,7 +106,15 @@ namespace net::e1000 {
       exit(1);
     }
 
-    // TODO: 割り込みのなんか (MSI)
+    const uint8_t bsp_local_apic_id =
+      *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
+    Error err = pci::ConfigureMSIFixedDestination(
+        *nic_dev, bsp_local_apic_id,
+        pci::MSITriggerMode::kLevel, pci::MSIDeliveryMode::kFixed,
+        InterruptVector::kNic, 0);
+    if (err) {
+      Log(kError, "Error while NIC MSI configuration: %s:%d\n", err.File(), err.Line());
+    }
 
     // BAR を読む
     const WithError<uint64_t> nic_bar = pci::ReadBar(*nic_dev, 0);
@@ -131,20 +146,28 @@ namespace net::e1000 {
     return send_status;
   }
 
-  uint16_t Nic::Receive (void *buf) {
+    Packet Nic::Receive () {
     uint32_t next_tale = (r_tale_ + 1) % R_DESC_NUM;
     r_descriptor *desc = &r_desc_ring_addr_[next_tale];
     uint16_t len = 0;
 
-    // TODO: 受信の判定、RDESC.STATUS.DD とかいうのがあるのでそれを使う
     if (desc->status != 0) {
-      len = desc->length + 1;
-      memcpy(buf, (void *)desc->buffer_address, len);
+      Packet packet((void *)desc->buffer_address, desc->length);
 
-      r_tale_++;
+      r_tale_ = next_tale;
       SetNicReg(RDT_OFFSET, r_tale_);
+      return packet;
     }
 
-    return len;
+    Packet packet(NULL, 0);
+    return packet;
+  }
+
+  bool Nic::HasPacket() {
+    return GetNicReg(RDH_OFFSET) != (r_tale_ + R_DESC_NUM + 1) % R_DESC_NUM;
+  }
+
+  void Nic::AckInterrupt() {
+    SetNicReg(ICR_OFFSET, IMS_LSC | IMS_RXDMT0 | IMS_RXO | IMS_RXSEQ | IMS_RXT0);
   }
 }

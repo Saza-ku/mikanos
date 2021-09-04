@@ -241,13 +241,6 @@ extern "C" void KernelMainNewStack(
   uint8_t sta = net::e1000::nic->Send(message_buffer, sizeof(message_buffer));
   printk("sta: %d\n", sta);
 
-  char packet_buffer[PACKET_SIZE];
-  uint32_t len = 0;
-  while(len == 0) {
-    len = net::e1000::nic->Receive(packet_buffer);
-  }
-  printk("Received: %s", packet_buffer);
-
   while (true) {
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();

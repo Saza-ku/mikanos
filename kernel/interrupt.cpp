@@ -14,6 +14,8 @@
 #include "task.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
+#include "logger.hpp"
+#include "net/nic/e1000.hpp"
 
 std::array<InterruptDescriptor, 256> idt;
 
@@ -37,6 +39,16 @@ namespace {
   __attribute__((interrupt))
   void IntHandlerXHCI(InterruptFrame* frame) {
     task_manager->SendMessage(1, Message{Message::kInterruptXHCI});
+    NotifyEndOfInterrupt();
+  }
+
+  __attribute__((interrupt))
+  void IntHandlerNic(InterruptFrame* frame) {
+    while(net::e1000::nic->HasPacket()) {
+      net::Packet packet = net::e1000::nic->Receive();
+      packet.Dump(LogLevel::kError);
+    }
+    net::e1000::nic->AckInterrupt();
     NotifyEndOfInterrupt();
   }
 
@@ -134,11 +146,13 @@ void InitializeInterrupt() {
                 kKernelCS);
   };
   set_idt_entry(InterruptVector::kXHCI, IntHandlerXHCI);
+  set_idt_entry(InterruptVector::kNic, IntHandlerNic);
   SetIDTEntry(idt[InterruptVector::kLAPICTimer],
               MakeIDTAttr(DescriptorType::kInterruptGate, 0 /* DPL */,
                           true /* present */, kISTForTimer /* IST */),
               reinterpret_cast<uint64_t>(IntHandlerLAPICTimer),
               kKernelCS);
+
   set_idt_entry(0,  IntHandlerDE);
   set_idt_entry(1,  IntHandlerDB);
   set_idt_entry(3,  IntHandlerBP);
