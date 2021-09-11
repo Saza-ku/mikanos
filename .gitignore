@@ -95,3 +95,4 @@ dkms.conf
 *.dat
 
 mnt/
+*.pcap

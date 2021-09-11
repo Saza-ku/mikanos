@@ -222,6 +222,7 @@ extern "C" void KernelMainNewStack(
   Task& main_task = task_manager->CurrentTask();
 
   usb::xhci::Initialize();
+  net::e1000::Initialize();
   InitializeKeyboard();
   InitializeMouse();
 
@@ -235,11 +236,6 @@ extern "C" void KernelMainNewStack(
     .Wakeup();
 
   char str[128];
-
-  net::e1000::Initialize();
-  char message_buffer[] = "Hello, World!";
-  uint8_t sta = net::e1000::nic->Send(message_buffer, sizeof(message_buffer));
-  printk("sta: %d\n", sta);
 
   while (true) {
     __asm__("cli");

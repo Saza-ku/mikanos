@@ -49,7 +49,6 @@ namespace net::e1000 {
         (uint64_t)&packet_buffer[i];
       r_desc_ring_addr_[i].status = 0;
       r_desc_ring_addr_[i].errors = 0;
-      Log(kError, "buffer %d: %d\n", i, r_desc_ring_addr_[i].buffer_address);
     }
 
     t_tale_ = 0;
