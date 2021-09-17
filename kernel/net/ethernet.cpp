@@ -1,28 +1,17 @@
 #include "ethernet.hpp"
 #include "mbuf.hpp"
+#include "net_util.hpp"
 #include "nic/e1000.hpp"
 #include <cstddef>
-
-namespace {
-  // TODO: こんなんやめたい
-  uint64_t make_mac_addr(uint8_t addr1, uint8_t addr2, uint8_t addr3, uint8_t addr4, uint8_t addr5, uint8_t addr6) {
-    uint64_t mac_addr = 0;
-    mac_addr += addr6;
-    mac_addr += addr5 * (1<<8);
-    mac_addr += addr4 * (1<<16);
-    mac_addr += addr3 * ((uint64_t)1<<24);
-    mac_addr += addr2 * ((uint64_t)1<<32);
-    mac_addr += addr1 * ((uint64_t)1<<40);
-    return mac_addr;
-  }
-}
+#include <cstdint>
 
 namespace net {
   void send_ethernet(mbuf *payload) {
     ethernet_header header;
-    header.dest_address = 1;
+    macaddr_copy(header.dest_address, MACADDR_BROADCAST);
     // ハードコーディングやめたい
-    header.src_address = make_mac_addr(52,54,0,12,34,56);
+    macaddr_copy(header.src_address, (macaddr_t){0x52, 0x54, 0x0, 0x12, 0x34, 0x56});
+    header.type = hton16(0x0806);
     mbuf *header_buf = new mbuf(&header, sizeof(header));
     header_buf->append(payload);
     uint8_t buffer[PACKET_SIZE];

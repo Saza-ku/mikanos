@@ -122,7 +122,7 @@ namespace net::e1000 {
     Log(kDebug, "NIC mmio_base = %08lx\n", nic_mmio_base);
 
     nic = new Nic{nic_mmio_base};
-    nic->Initialize(true);
+    nic->Initialize(false);
   }
 
   uint8_t Nic::Send(void *buf, uint16_t length) {

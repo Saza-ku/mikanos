@@ -2,12 +2,15 @@
 
 #include <cstdint>
 #include "packet.hpp"
+#include "mbuf.hpp"
+#include "net_util.hpp"
 
 namespace net {
   struct ethernet_header {
-    uint64_t preamble = 0xaaaaaaaaaaaaaaab;
-    uint64_t dest_address : 48;
-    uint64_t src_address  : 48;
+    macaddr_t dest_address;
+    macaddr_t src_address;
     uint16_t type;
   } __attribute__((packed));
+
+  void send_ethernet(mbuf *payload);
 }
