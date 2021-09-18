@@ -1,8 +1,12 @@
+#include "e1000.hpp"
+
 #include <string.h>
-#include "net/nic/e1000.hpp"
+
 #include "pci.hpp"
 #include "logger.hpp"
 #include "interrupt.hpp"
+#include "net/mbuf.hpp"
+#include "net/ethernet.hpp"
 
 namespace net::e1000 {
   Nic *nic;
@@ -145,21 +149,18 @@ namespace net::e1000 {
     return send_status;
   }
 
-    Packet Nic::Receive () {
+    void Nic::Receive () {
     uint32_t next_tale = (r_tale_ + 1) % R_DESC_NUM;
     r_descriptor *desc = &r_desc_ring_addr_[next_tale];
     uint16_t len = 0;
 
     if (desc->status != 0) {
-      Packet packet((void *)desc->buffer_address, desc->length);
+      mbuf *buf = new mbuf((void *)desc->buffer_address, desc->length);
 
       r_tale_ = next_tale;
       SetNicReg(RDT_OFFSET, r_tale_);
-      return packet;
+      receive_ethernet(buf);
     }
-
-    Packet packet(NULL, 0);
-    return packet;
   }
 
   bool Nic::HasPacket() {

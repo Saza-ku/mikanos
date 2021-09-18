@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstdint>
-#include "packet.hpp"
+
 #include "mbuf.hpp"
 #include "net_util.hpp"
+
+#define TYPE_ARP 0x0806
 
 namespace net {
   struct ethernet_header {
@@ -12,5 +14,6 @@ namespace net {
     uint16_t type;
   } __attribute__((packed));
 
-  void send_ethernet(mbuf *payload);
+  void send_ethernet(mbuf *payload, uint16_t type);
+  void receive_ethernet(mbuf *buf);
 }

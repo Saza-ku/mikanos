@@ -7,7 +7,7 @@ OBJS = main.o graphics.o mouse.o font.o hankaku.o newlib_support.o console.o \
        usb/xhci/port.o usb/xhci/device.o usb/xhci/devmgr.o usb/xhci/registers.o \
        usb/classdriver/base.o usb/classdriver/hid.o usb/classdriver/keyboard.o \
        usb/classdriver/mouse.o usb/classdriver/cdc.o \
-	   net/nic/e1000.o net/packet.o net/mbuf.o net/ethernet.o net/arp.o \
+	   net/nic/e1000.o net/mbuf.o net/ethernet.o net/arp.o \
 	   net/net_util.o
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 

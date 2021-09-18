@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include "net/packet.hpp"
 
 #define ALIGN_MARGIN   15
 #define T_DESC_NUM     8
@@ -98,7 +97,7 @@ namespace net::e1000 {
     Nic(uintptr_t mmio_base);
     void Initialize(bool accept_all);
     uint8_t Send(void *buf, uint16_t length);
-    Packet Receive();
+    void Receive();
     bool HasPacket();
     void AckInterrupt();
     

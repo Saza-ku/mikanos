@@ -1,7 +1,9 @@
 #include "arp.hpp"
+
 #include "ethernet.hpp"
 #include "mbuf.hpp"
 #include "net_util.hpp"
+#include "logger.hpp"
 
 namespace net {
   void send_arp(ipaddr_t dest_ip) {
@@ -13,6 +15,35 @@ namespace net {
     packet.opcode = hton16(1);
 
     mbuf *packet_mbuf = new mbuf(&packet, sizeof(packet));
-    send_ethernet(packet_mbuf);
+    send_ethernet(packet_mbuf, TYPE_ARP);
+  }
+
+  void receive_arp(mbuf *mbuf) {
+    arp_packet *packet = nullptr;
+    size_t len = mbuf->read(packet, sizeof(*packet));
+    if (len != sizeof(*packet)) {
+      Log(kError, "ARP: Received invalid packet\n");
+    }
+
+    switch(ntoh16(packet->opcode)) {
+      case 2:
+        Log(kError, "ARP: Received reply\n");
+        Log(kError, "%d.%d.%d.%d - %x:%x:%x:%x:%x:%x\n",
+            packet->src_ip[0],
+            packet->src_ip[1],
+            packet->src_ip[2],
+            packet->src_ip[3],
+            packet->src_mac[0],
+            packet->src_mac[1],
+            packet->src_mac[2],
+            packet->src_mac[3],
+            packet->src_mac[4],
+            packet->src_mac[5]
+        );
+        break;
+      default:
+        Log(kError, "ARP: Received unknown packet\n");
+        break;
+    }
   }
 }

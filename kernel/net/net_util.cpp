@@ -1,4 +1,5 @@
 #include "net_util.hpp"
+
 #include <string.h>
 
 namespace net {

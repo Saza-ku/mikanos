@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+
 #include "net_util.hpp"
+#include "mbuf.hpp"
 
 namespace net {
   struct arp_packet {
@@ -17,4 +19,5 @@ namespace net {
   } __attribute__((packed));
 
   void send_arp(ipaddr_t dest_ip);
+  void receive_arp(mbuf *mbuf);
 }

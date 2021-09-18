@@ -45,8 +45,7 @@ namespace {
   __attribute__((interrupt))
   void IntHandlerNic(InterruptFrame* frame) {
     while(net::e1000::nic->HasPacket()) {
-      net::Packet packet = net::e1000::nic->Receive();
-      packet.Dump(LogLevel::kError);
+      net::e1000::nic->Receive();
     }
     net::e1000::nic->AckInterrupt();
     NotifyEndOfInterrupt();
