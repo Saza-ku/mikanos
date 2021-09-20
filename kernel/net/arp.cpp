@@ -13,7 +13,7 @@ namespace {
   net::arp_entry *arp_lookup(ipaddr_t ip) {
     for (int i = 0; i < ARP_TABLE_LENGTH; i++) {
       net::arp_entry *e = &arp_table[i];
-      if (e->in_use && e->resolved &&
+      if (e->in_use &&
           net::same_ipaddr(ip, e->ip)) {
         return e;
       }
@@ -30,7 +30,7 @@ namespace {
     net::ipaddr_copy(e.ip, ip);
     // 同じ IP のエントリを置き換え
     for (int i = 0; i < ARP_TABLE_LENGTH; i++) {
-      if (arp_table[i].in_use && arp_table[i].resolved &&
+      if (arp_table[i].in_use &&
           net::same_ipaddr(arp_table[i].ip, e.ip)) {
         arp_table[i] = e;
         return &arp_table[i];
@@ -39,25 +39,55 @@ namespace {
 
     // 新しくエントリを追加
     arp_table[index] = e;
+    int prev_index = index;
     index = (index + 1) % ARP_TABLE_LENGTH;
-    return &arp_table[index];
+    return &arp_table[prev_index];
   }
 
   void receive_arp_reply(ipaddr_t ip, macaddr_t mac) {
     net::arp_entry *e = arp_lookup(ip);
-    e->resolved = true;
-    net::macaddr_copy(e->mac, mac);
-    e->send_packets();
+    if (e) {
+      e->resolved = true;
+      net::macaddr_copy(e->mac, mac);
+      e->send_packets();
+    }
+    else {
+      Log(kError, "ARP: Received unknown reply\n");
+    }
+  }
+  void receive_arp_request(ipaddr_t dest_ip, ipaddr_t ip, macaddr_t mac) {
+    if (!net::same_ipaddr(dest_ip, net::e1000::nic->ipaddr)) {
+      return;
+    }
+
+    net::arp_packet payload;
+    net::ipaddr_copy(payload.dest_ip, ip);
+    net::macaddr_copy(payload.dest_mac, mac);
+    net::ipaddr_copy(payload.src_ip, net::e1000::nic->ipaddr);
+    net::macaddr_copy(payload.src_mac, net::e1000::nic->macaddr);
+    payload.opcode = net::hton16(2);
+
+    net::mbuf *payload_mbuf = new net::mbuf(&payload, sizeof(payload));
+
+    net::ethernet_header header;
+    net::macaddr_copy(header.dest_address, mac);
+    net::macaddr_copy(header.src_address, net::e1000::nic->macaddr);
+    header.type = net::hton16(TYPE_ARP);
+
+    net::mbuf *header_mbuf = new net::mbuf(&header, sizeof(header));
+    header_mbuf->append(payload_mbuf);
+
+    net::e1000::nic->Send(header_mbuf);
   }
 }
 
 namespace net {
   void send_arp(ipaddr_t dest_ip) {
     arp_packet payload;
-    // TODO: IP も NIC でもつか？
-    ipaddr_copy(payload.src_ip, (ipaddr_t){10, 0, 2, 15});
+    ipaddr_copy(payload.src_ip, e1000::nic->ipaddr);
     macaddr_copy(payload.src_mac, e1000::nic->macaddr);
     ipaddr_copy(payload.dest_ip, dest_ip);
+    // TODO: ハードコーディングやめたい
     payload.opcode = hton16(1);
 
     mbuf *payload_mbuf = new mbuf(&payload, sizeof(payload));
@@ -74,28 +104,32 @@ namespace net {
   }
 
   void receive_arp(mbuf *mbuf) {
-    arp_packet *packet = nullptr;
-    size_t len = mbuf->read(packet, sizeof(*packet));
-    if (len != sizeof(*packet)) {
+    arp_packet packet;
+    size_t len = mbuf->read(&packet, sizeof(packet));
+    if (len != sizeof(packet)) {
       Log(kError, "ARP: Received invalid packet\n");
     }
 
-    switch(ntoh16(packet->opcode)) {
+    switch(ntoh16(packet.opcode)) {
+      case 1:
+        Log(kError, "ARP: Received request\n");
+        receive_arp_request(packet.dest_ip, packet.src_ip, packet.src_mac);
+        break;
       case 2:
         Log(kError, "ARP: Received reply\n");
         Log(kError, "%d.%d.%d.%d - %x:%x:%x:%x:%x:%x\n",
-            packet->src_ip[0],
-            packet->src_ip[1],
-            packet->src_ip[2],
-            packet->src_ip[3],
-            packet->src_mac[0],
-            packet->src_mac[1],
-            packet->src_mac[2],
-            packet->src_mac[3],
-            packet->src_mac[4],
-            packet->src_mac[5]
+            packet.src_ip[0],
+            packet.src_ip[1],
+            packet.src_ip[2],
+            packet.src_ip[3],
+            packet.src_mac[0],
+            packet.src_mac[1],
+            packet.src_mac[2],
+            packet.src_mac[3],
+            packet.src_mac[4],
+            packet.src_mac[5]
         );
-        receive_arp_reply(packet->src_ip, packet->src_mac);
+        receive_arp_reply(packet.src_ip, packet.src_mac);
         break;
       default:
         Log(kError, "ARP: Received unknown packet\n");
@@ -110,7 +144,7 @@ namespace net {
     }
 
     arp_entry *e = arp_lookup(ip);
-    if (e == nullptr) {
+    if (!e || !e->resolved) {
       return false;
     }
 
@@ -119,8 +153,8 @@ namespace net {
   }
 
   void arp_entry::send_packets() {
-    net::mbuf_list *node = packets_pointer;
-    while(node != nullptr) {
+    net::mbuf_list *node = packets_ptr;
+    while(node) {
       send_ethernet(node->buf, node->packet_type, ip);
       net::mbuf_list *old_node = node;
       node = node->next;
@@ -129,12 +163,12 @@ namespace net {
   }
 
   void arp_entry::add_packet(mbuf *packet, uint16_t type) {
-    // packets_pointer で持っているリストに prepend する
+    // packets_ptr で持っているリストに prepend する
     mbuf_list *new_node = new mbuf_list();
     new_node->buf = packet;
     new_node->packet_type = type;
-    new_node->next = packets_pointer;
-    packets_pointer = new_node;
+    new_node->next = packets_ptr;
+    packets_ptr = new_node;
   }
 
   void arp_enqueue(mbuf *packet, uint16_t type, ipaddr_t ip) {

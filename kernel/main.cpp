@@ -240,10 +240,6 @@ extern "C" void KernelMainNewStack(
 
   char str[128];
 
-  char *s = "hoge";
-  net::mbuf *packet = new net::mbuf(s, 4);
-  net::send_ethernet(packet, 0x0800, (ipaddr_t){10, 0, 2, 2});
-
   while (true) {
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();

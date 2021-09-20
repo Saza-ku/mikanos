@@ -33,7 +33,7 @@ namespace net {
     void send_packets();
     void add_packet(mbuf *packet, uint16_t type);
    private:
-    mbuf_list *packets_pointer;
+    mbuf_list *packets_ptr = nullptr;
   };
 
   void send_arp(ipaddr_t dest_ip);

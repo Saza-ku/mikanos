@@ -28,14 +28,14 @@ namespace net {
   }
 
   void receive_ethernet(mbuf *buf) {
-    ethernet_header *header = nullptr;
-    size_t len = buf->read(header, sizeof(*header));
-    if (len != sizeof(*header)) {
+    ethernet_header header;
+    size_t len = buf->read(&header, sizeof(header));
+    if (len != sizeof(header)) {
       Log(kError, "Ethernet: Received invalid Packet\n");
       return;
     }
 
-    uint16_t type = ntoh16(header->type);
+    uint16_t type = ntoh16(header.type);
 
     switch (type)
     {

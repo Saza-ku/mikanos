@@ -101,6 +101,7 @@ namespace net::e1000 {
     Nic(uintptr_t mmio_base);
     void Initialize(bool accept_all);
     void Send(mbuf *packet);
+    ipaddr_t ipaddr;
     macaddr_t macaddr;
     void Receive();
     bool HasPacket();

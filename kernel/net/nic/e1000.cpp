@@ -95,6 +95,10 @@ namespace net::e1000 {
     uint8_t *p = (uint8_t *)&mac;
     macaddr_copy(macaddr, (macaddr_t){p[0], p[1], p[2], p[3], p[4], p[5]});
     Log(kError, "MAC Address is %x:%x:%x:%x:%x:%x\n", p[0], p[1], p[2], p[3], p[4], p[5]);
+
+    // IP アドレスの設定
+    // TODO: IP アドレスの取得 (DHCP?)
+    ipaddr_copy(ipaddr, (ipaddr_t){10, 0, 2, 15});
   }
 
   void Initialize() {
