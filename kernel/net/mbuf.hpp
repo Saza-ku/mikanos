@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 
-#define MBUF_MAX_LEN 2048
+#define MBUF_MAX_LEN 512
 
 namespace net {
   class mbuf {

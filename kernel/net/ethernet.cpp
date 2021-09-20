@@ -10,18 +10,21 @@
 #include "logger.hpp"
 
 namespace net {
-  void send_ethernet(mbuf *payload, uint16_t type) {
+  void send_ethernet(mbuf *payload, uint16_t type, ipaddr_t ip) {
     ethernet_header header;
+    macaddr_t dest_mac;
+    if (!arp_resolve(ip, dest_mac)) {
+      arp_enqueue(payload, type, ip);
+      send_arp(ip);
+      return;
+    }
     macaddr_copy(header.dest_address, MACADDR_BROADCAST);
-    // ハードコーディングやめたい
-    macaddr_copy(header.src_address, (macaddr_t){0x52, 0x54, 0x0, 0x12, 0x34, 0x56});
+    macaddr_copy(header.src_address, dest_mac);
     header.type = hton16(type);
     mbuf *header_buf = new mbuf(&header, sizeof(header));
     header_buf->append(payload);
-    uint8_t buffer[PACKET_SIZE];
-    size_t len = header_buf->read(buffer, PACKET_SIZE);
 
-    e1000::nic->Send(buffer, len);
+    e1000::nic->Send(header_buf);
   }
 
   void receive_ethernet(mbuf *buf) {

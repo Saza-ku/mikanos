@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include "net/net_util.hpp"
+#include "net/mbuf.hpp"
 
 #define ALIGN_MARGIN   15
 #define T_DESC_NUM     8
@@ -25,6 +27,8 @@
 #define RDT_OFFSET     0x02818u
 #define RDTR_OFFSET    0x02820u
 #define RADV_OFFSET    0x0282Cu
+#define RAL_OFFSET     0x05400u
+#define RAH_OFFSET     0x05404u
 
 #define CTRL_FD        0x00000001u // CTRL[0]
 #define CTRL_ASDE      0x00000020u // CTRL[5]
@@ -96,7 +100,8 @@ namespace net::e1000 {
    public:
     Nic(uintptr_t mmio_base);
     void Initialize(bool accept_all);
-    uint8_t Send(void *buf, uint16_t length);
+    void Send(mbuf *packet);
+    macaddr_t macaddr;
     void Receive();
     bool HasPacket();
     void AckInterrupt();
@@ -107,6 +112,7 @@ namespace net::e1000 {
     uint32_t r_tale_;
     t_descriptor *t_desc_ring_addr_;
     r_descriptor *r_desc_ring_addr_;
+    void SendImpl(void *buf, uint16_t length);
     void SetNicReg(uint16_t reg_offset, uint32_t value);
     uint32_t GetNicReg(uint16_t reg_offset);
   };

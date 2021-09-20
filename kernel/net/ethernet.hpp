@@ -14,6 +14,6 @@ namespace net {
     uint16_t type;
   } __attribute__((packed));
 
-  void send_ethernet(mbuf *payload, uint16_t type);
+  void send_ethernet(mbuf *payload, uint16_t type, ipaddr_t dest_ip);
   void receive_ethernet(mbuf *buf);
 }

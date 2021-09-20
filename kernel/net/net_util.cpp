@@ -21,4 +21,20 @@ namespace net {
   void ipaddr_copy(ipaddr_t dest, const ipaddr_t src) {
     memcpy(dest, src, IPADDR_LEN);
   }
+
+  bool same_macaddr(macaddr_t mac1, macaddr_t mac2) {
+    return mac1[0] == mac2[0] &&
+           mac1[1] == mac2[1] &&
+           mac1[2] == mac2[2] &&
+           mac1[3] == mac2[3] &&
+           mac1[4] == mac2[4] &&
+           mac1[5] == mac2[5];
+  }
+  
+  bool same_ipaddr(ipaddr_t ip1, ipaddr_t ip2) {
+    return ip1[0] == ip2[0] &&
+           ip1[1] == ip2[1] &&
+           ip1[2] == ip2[2] &&
+           ip1[3] == ip2[3];
+  }
 }

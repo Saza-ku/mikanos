@@ -41,6 +41,7 @@
 #include "net/nic/e1000.hpp"
 #include "net/arp.hpp"
 #include "net/ethernet.hpp"
+#include "net/mbuf.hpp"
 
 __attribute__((format(printf, 1, 2))) int printk(const char* format, ...) {
   va_list ap;
@@ -239,7 +240,9 @@ extern "C" void KernelMainNewStack(
 
   char str[128];
 
-  net::send_arp((ipaddr_t){10, 0, 2, 2});
+  char *s = "hoge";
+  net::mbuf *packet = new net::mbuf(s, 4);
+  net::send_ethernet(packet, 0x0800, (ipaddr_t){10, 0, 2, 2});
 
   while (true) {
     __asm__("cli");

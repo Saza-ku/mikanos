@@ -18,6 +18,26 @@ namespace net {
     ipaddr_t dest_ip;
   } __attribute__((packed));
 
+  struct mbuf_list {
+    mbuf *buf;
+    mbuf_list *next = nullptr;
+    uint16_t packet_type;
+  };
+  
+  class arp_entry {
+   public:
+    macaddr_t mac;
+    ipaddr_t ip;
+    bool resolved = false;
+    bool in_use = false;
+    void send_packets();
+    void add_packet(mbuf *packet, uint16_t type);
+   private:
+    mbuf_list *packets_pointer;
+  };
+
   void send_arp(ipaddr_t dest_ip);
   void receive_arp(mbuf *mbuf);
+  bool arp_resolve(ipaddr_t ip, macaddr_t mac);
+  void arp_enqueue(mbuf *packet, uint16_t type, ipaddr_t ip);
 }

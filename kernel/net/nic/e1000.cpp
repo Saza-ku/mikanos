@@ -88,6 +88,13 @@ namespace net::e1000 {
     SetNicReg(RDLEN_OFFSET, sizeof(t_descriptor) * R_DESC_NUM);
     SetNicReg(RDH_OFFSET, 0);
     SetNicReg(RDT_OFFSET, r_tale_);
+
+    // MAC アドレスの設定
+    uint64_t mac = GetNicReg(RAL_OFFSET);
+    mac |= (uint64_t)GetNicReg(RAH_OFFSET) << 32;
+    uint8_t *p = (uint8_t *)&mac;
+    macaddr_copy(macaddr, (macaddr_t){p[0], p[1], p[2], p[3], p[4], p[5]});
+    Log(kError, "MAC Address is %x:%x:%x:%x:%x:%x\n", p[0], p[1], p[2], p[3], p[4], p[5]);
   }
 
   void Initialize() {
@@ -129,7 +136,7 @@ namespace net::e1000 {
     nic->Initialize(false);
   }
 
-  uint8_t Nic::Send(void *buf, uint16_t length) {
+  void Nic::SendImpl(void *buf, uint16_t length) {
     // ディスクリプタリングを書き換える
     t_descriptor *desc = &this->t_desc_ring_addr_[this->t_tale_];
     desc->buffer_address = (uintptr_t)buf;
@@ -146,13 +153,17 @@ namespace net::e1000 {
     while(!send_status) {
       send_status = desc->status & 0x0fu;
     }
-    return send_status;
   }
 
-    void Nic::Receive () {
+  void Nic::Send(mbuf *packet) {
+    uint8_t buffer[PACKET_SIZE];
+    size_t len = packet->read(buffer, PACKET_SIZE);
+    SendImpl(buffer, len);
+  }
+
+    void Nic::Receive() {
     uint32_t next_tale = (r_tale_ + 1) % R_DESC_NUM;
     r_descriptor *desc = &r_desc_ring_addr_[next_tale];
-    uint16_t len = 0;
 
     if (desc->status != 0) {
       mbuf *buf = new mbuf((void *)desc->buffer_address, desc->length);
