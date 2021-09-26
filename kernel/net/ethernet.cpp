@@ -13,13 +13,22 @@ namespace net {
   void send_ethernet(mbuf *payload, uint16_t type, ipaddr_t ip) {
     ethernet_header header;
     macaddr_t dest_mac;
-    if (!arp_resolve(ip, dest_mac)) {
-      arp_enqueue(payload, type, ip);
-      send_arp(ip);
+
+    ipaddr_t next_router;
+    if(same_ipaddr(ip, IPV4_ADDR_BROADCAST)) {
+      ipaddr_copy(next_router, ip);
+    }
+    else {
+      ipaddr_copy(next_router, ipaddr_t{10, 0, 2, 2});
+    }
+
+    if (!arp_resolve(next_router, dest_mac)) {
+      arp_enqueue(payload, type, next_router);
+      send_arp(next_router);
       return;
     }
-    macaddr_copy(header.dest_address, MACADDR_BROADCAST);
-    macaddr_copy(header.src_address, dest_mac);
+    macaddr_copy(header.dest_address, dest_mac);
+    macaddr_copy(header.src_address, e1000::nic->macaddr);
     header.type = hton16(type);
     mbuf *header_buf = new mbuf(&header, sizeof(header));
     header_buf->append(payload);

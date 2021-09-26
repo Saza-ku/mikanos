@@ -43,6 +43,16 @@ namespace net {
     return read_len;
   }
 
+  size_t mbuf::length() {
+    mbuf *p = this;
+    size_t len = 0;
+    while (p) {
+      len += p->length_one();
+      p = p->next_;
+    }
+    return len;
+  }
+
   uint8_t *mbuf::data() {
     return &data_[offset_];
   }
@@ -55,7 +65,16 @@ namespace net {
     old_tale->next_ = new_tale;
   }
 
+  void mbuf::append_bytes(void *data, size_t len) {
+    mbuf *buf = new mbuf(data, len);
+    this->append(buf);
+  }
+
   void mbuf::prepend(mbuf *new_head) {
     new_head->next_ = this;
+  }
+
+  size_t mbuf::length_one() {
+    return offset_end_ - offset_;
   }
 }

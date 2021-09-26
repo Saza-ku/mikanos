@@ -4,7 +4,7 @@
 #define MACADDR_LEN 6
 #define IPADDR_LEN 4
 #define MACADDR_BROADCAST ((macaddr_t){0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
-#define IPV4_ADDR_BORADCAST ((macaddr_t){0xff, 0xff, 0xff, 0xff})
+#define IPV4_ADDR_BROADCAST ((macaddr_t){0xff, 0xff, 0xff, 0xff})
 
 typedef uint8_t macaddr_t[MACADDR_LEN];
 typedef uint8_t ipaddr_t[IPADDR_LEN];

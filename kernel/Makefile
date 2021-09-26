@@ -8,7 +8,7 @@ OBJS = main.o graphics.o mouse.o font.o hankaku.o newlib_support.o console.o \
        usb/classdriver/base.o usb/classdriver/hid.o usb/classdriver/keyboard.o \
        usb/classdriver/mouse.o usb/classdriver/cdc.o \
 	   net/nic/e1000.o net/mbuf.o net/ethernet.o net/arp.o \
-	   net/net_util.o
+	   net/net_util.o net/ip.o net/checksum.o net/icmp.o
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 
 CPPFLAGS += -I.

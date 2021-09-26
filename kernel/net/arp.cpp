@@ -138,7 +138,7 @@ namespace net {
   }
 
   bool arp_resolve(ipaddr_t ip, macaddr_t mac) {
-    if (same_ipaddr(ip, IPV4_ADDR_BORADCAST)) {
+    if (same_ipaddr(ip, IPV4_ADDR_BROADCAST)) {
       macaddr_copy(mac, MACADDR_BROADCAST);
       return true;
     }

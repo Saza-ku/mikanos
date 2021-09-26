@@ -42,6 +42,8 @@
 #include "net/arp.hpp"
 #include "net/ethernet.hpp"
 #include "net/mbuf.hpp"
+#include "net/ip.hpp"
+#include "net/icmp.hpp"
 
 __attribute__((format(printf, 1, 2))) int printk(const char* format, ...) {
   va_list ap;
@@ -237,6 +239,8 @@ extern "C" void KernelMainNewStack(
   task_manager->NewTask()
     .InitContext(TaskWallclock, 0)
     .Wakeup();
+  
+  net::send_icmp_echo_request((ipaddr_t){1, 1, 1, 1});
 
   char str[128];
 

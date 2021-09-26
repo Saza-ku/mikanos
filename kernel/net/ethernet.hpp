@@ -6,6 +6,7 @@
 #include "net_util.hpp"
 
 #define TYPE_ARP 0x0806
+#define TYPE_IP  0x0800
 
 namespace net {
   struct ethernet_header {
