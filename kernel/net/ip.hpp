@@ -23,4 +23,5 @@ namespace net {
   } __attribute__((packed));
 
   void send_ip(ipaddr_t dst, uint8_t proto, mbuf *payload);
+  void receive_ip(mbuf *mbuf);
 }

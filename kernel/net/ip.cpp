@@ -1,5 +1,6 @@
 #include "ip.hpp"
 
+#include "icmp.hpp"
 #include "checksum.hpp"
 #include "ethernet.hpp"
 #include "net/nic/e1000.hpp"
@@ -29,5 +30,20 @@ namespace net {
     ip_packet->append(payload);
 
     send_ethernet(ip_packet, TYPE_IP, dst);
+  }
+
+  void receive_ip(mbuf *mbuf) {
+    ip_header header;
+    mbuf->read(&header, sizeof(header));
+
+    switch (header.proto){
+      case PROTO_ICMP:
+        Log(kError, "IP: Received ICMP\n");
+        receive_icmp(mbuf, header.src_addr);
+        break;
+      default:
+        Log(kError, "IP: Received unknown packet: proto=%x\n", header.proto);
+        break;
+    }
   }
 }

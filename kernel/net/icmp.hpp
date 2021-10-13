@@ -1,6 +1,7 @@
 #include <cstdint>
 
 #include "net/net_util.hpp"
+#include "mbuf.hpp"
 
 namespace net {
   #define ICMP_TYPE_ECHO_REPLY   0x00
@@ -15,4 +16,6 @@ namespace net {
   } __attribute__((packed));
 
   void send_icmp_echo_request(ipaddr_t dst);
+  void receive_icmp(mbuf *mbuf, ipaddr_t src);
+  void receive_icmp_echo_reply(ipaddr_t src);
 }

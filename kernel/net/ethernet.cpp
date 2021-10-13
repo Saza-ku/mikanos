@@ -7,6 +7,7 @@
 #include "net_util.hpp"
 #include "nic/e1000.hpp"
 #include "arp.hpp"
+#include "ip.hpp"
 #include "logger.hpp"
 
 namespace net {
@@ -49,8 +50,13 @@ namespace net {
     switch (type)
     {
     case TYPE_ARP:
-    Log(kError, "Ethernet: Received ARP\n");
+      Log(kError, "Ethernet: Received ARP\n");
       receive_arp(buf);
+      break;
+
+    case TYPE_IP:
+      Log(kError, "Ethernet: Received IP\n");
+      receive_ip(buf);
       break;
     
     default:
