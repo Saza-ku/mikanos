@@ -4,11 +4,11 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/vscode/edk2/MdePkg/Include",
-                "/home/vscode/edk2/MdePkg/Include/X64",
-                "/home/vscode/osbook/devenv/x86_64-elf/include/c++/v1",
-                "/home/vscode/osbook/devenv/x86_64-elf/include",
-                "/home/vscode/osbook/devenv/x86_64-elf/include/freetype2"
+                "/home/vagrant/edk2/MdePkg/Include",
+                "/home/vagrant/edk2/MdePkg/Include/X64",
+                "/home/vagrant/osbook/devenv/x86_64-elf/include/c++/v1",
+                "/home/vagrant/osbook/devenv/x86_64-elf/include",
+                "/home/vagrant/osbook/devenv/x86_64-elf/include/freetype2"
 
             ],
             "defines": [
