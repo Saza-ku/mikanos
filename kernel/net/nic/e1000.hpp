@@ -64,6 +64,8 @@
 #define T_DESC_CMD_RS  0b00001000u
 #define T_DESC_CMD_EOP 0b00000001u
 
+#define R_DESC_STA_DD  0b00000001u
+
 namespace net::e1000 {
   /**
    * @struct  t_descriptor

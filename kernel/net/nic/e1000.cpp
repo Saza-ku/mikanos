@@ -169,8 +169,10 @@ namespace net::e1000 {
     uint32_t next_tale = (r_tale_ + 1) % R_DESC_NUM;
     r_descriptor *desc = &r_desc_ring_addr_[next_tale];
 
-    if (desc->status != 0) {
+    if (desc->status & R_DESC_STA_DD) {
       mbuf *buf = new mbuf((void *)desc->buffer_address, desc->length);
+      
+      desc->status = 0;
 
       r_tale_ = next_tale;
       SetNicReg(RDT_OFFSET, r_tale_);
